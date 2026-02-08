@@ -1,0 +1,37 @@
+name: Build and Release (Raspberry 4)
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on tags like v1.0.1
+
+jobs:
+  build-and-release:
+    name: Build for RPi4
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+
+      - name: Install Cross
+        run: cargo install cross --git https://github.com/cross-rs/cross.git
+
+      - name: Build Binary
+        run: cross build --release --target aarch64-unknown-linux-gnu
+
+      - name: Package Binary
+        run: |
+          cd target/aarch64-unknown-linux-gnu/release/
+          tar -czvf hdd-keepalive-rpi4.tar.gz hdd-keepalive
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: target/aarch64-unknown-linux-gnu/release/hdd-keepalive-rpi4.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
