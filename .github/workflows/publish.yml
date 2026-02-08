@@ -41,7 +41,7 @@ jobs:
       - name: Package Binary
         run: |
           cd target/aarch64-unknown-linux-gnu/release/
-          tar -czvf hdd-keepalive-rpi4.tar.gz hdd-keepalive
+          tar -czvf hdd-keepalive-rpi4.tar.gz keep_alive
           
       - name: Create Release
         uses: softprops/action-gh-release@v1
