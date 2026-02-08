@@ -1,17 +1,31 @@
-name: Build and Release (Raspberry 4)
+name: Manual Build and Release (RPI 4)
 
 on:
-  push:
-    tags:
-      - 'v*' # Triggers on tags like v1.0.1
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.2)'
+        required: true
+        default: 'v1.0.0'
 
 jobs:
   build-and-release:
     name: Build for RPi4
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to create tags and releases
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history for tagging
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -32,6 +46,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.event.inputs.version }}
           files: target/aarch64-unknown-linux-gnu/release/hdd-keepalive-rpi4.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
