@@ -16,11 +16,11 @@ jobs:
       matrix:
         include:
           - target: aarch64-unknown-linux-gnu
-            artifact_name: keep_alive         # <-- Change this to your Cargo.toml name
-            asset_name: my_app-pi
+            artifact_name: keep_alive       
+            asset_name: keep_alive_aarch64
           - target: x86_64-pc-windows-gnu
-            artifact_name: keep_aliv.exe     # <-- Change this to your Cargo.toml name + .exe
-            asset_name: my_app-windows.exe
+            artifact_name: keep_aliv.exe  
+            asset_name: keep_alive_x86_64.exe
 
     steps:
       - uses: actions/checkout@v4
