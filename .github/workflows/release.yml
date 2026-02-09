@@ -1,9 +1,12 @@
-name: Release
+name: Manual Release
 
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag to create (e.g., 1.0.2)'
+        required: true
+        default: '1.0.0'
 
 jobs:
   release:
@@ -13,11 +16,11 @@ jobs:
       matrix:
         include:
           - target: aarch64-unknown-linux-gnu
-            artifact_name: keepalive_linux_arm64
-            asset_name: keepalive-aarch64
+            artifact_name: keep_alive         # <-- Change this to your Cargo.toml name
+            asset_name: my_app-pi
           - target: x86_64-pc-windows-gnu
-            artifact_name: keepalive_windows.exe
-            asset_name: keepalive-windows.exe
+            artifact_name: keep_aliv.exe     # <-- Change this to your Cargo.toml name + .exe
+            asset_name: my_app-windows.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -36,11 +39,13 @@ jobs:
       - name: Prepare Artifacts
         run: |
           mkdir -p out
-          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} out/${{ matrix.asset_name }} || cp target/${{ matrix.target }}/release/$(cargo metadata --format-version 1 | jq -r '.packages[0].name') out/${{ matrix.asset_name }}
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} out/${{ matrix.asset_name }}
 
-      - name: Upload to Release
+      - name: Create Release and Upload
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag_name }}
           files: out/${{ matrix.asset_name }}
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
