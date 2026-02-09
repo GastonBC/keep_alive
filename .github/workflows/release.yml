@@ -19,7 +19,7 @@ jobs:
             artifact_name: keep_alive       
             asset_name: keep_alive_aarch64
           - target: x86_64-pc-windows-gnu
-            artifact_name: keep_aliv.exe  
+            artifact_name: keep_alive.exe  
             asset_name: keep_alive_x86_64.exe
 
     steps:
