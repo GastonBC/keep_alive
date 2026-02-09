@@ -1,5 +1,6 @@
 use std::{fs, io::{BufReader, Write}, thread, time::Duration};
 use std::io::BufRead;
+use chrono;
 /*
 Steps to refresh service
 sudo systemctl stop hdd-keepalive
@@ -52,7 +53,10 @@ fn write_to_dummy() -> std::io::Result<()> {
         .create(true)
         .open(KEEPALIVE_FILE)?;
 
-    writeln!(file, "keepalive")?;
+    let now: chrono::DateTime<chrono::Local> = chrono::Local::now();
+    let timestamp: String = now.format("%Y-%m-%d / %H:%M").to_string();
+
+    writeln!(file, "{} keepalive", timestamp)?;
     file.sync_all()?;
     
     println!("Activity triggered: Write successful.");
