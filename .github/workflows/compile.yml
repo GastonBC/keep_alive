@@ -1,7 +1,6 @@
-name: Compile
-
+name: Build Core
 on:
-  workflow_dispatch:
+  workflow_call:
 
 jobs:
   build:
@@ -26,3 +25,14 @@ jobs:
 
       - name: Build
         run: cross build --release --target ${{ matrix.target }}
+
+      - name: Upload Build Result
+        uses: actions/upload-artifact@v4
+        with:
+          # Unique name per matrix target
+          name: keep_alive-${{ matrix.target }}
+          # Path where 'cross' outputs the binaries
+          path: |
+            target/${{ matrix.target }}/release/keep_alive
+            target/${{ matrix.target }}/release/keep_alive.exe
+          retention-days: 1
