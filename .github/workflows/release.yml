@@ -1,51 +1,46 @@
-name: Manual Release
+name: Publish Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Tag to create (e.g., 1.0.2)'
-        required: true
-        default: '1.0.0'
+  push:
+    tags:
+      - '*'
 
 jobs:
-  release:
-    name: Release for ${{ matrix.target }}
+  validate:
+    uses: ./.github/workflows/compile.yml@master
+
+  create-release:
+    needs: validate
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - target: aarch64-unknown-linux-gnu
-            artifact_name: keep_alive       
-            asset_name: keep_alive_aarch64
-          - target: x86_64-pc-windows-gnu
-            artifact_name: keep_alive.exe  
-            asset_name: keep_alive_x86_64.exe
-
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
         with:
-          targets: ${{ matrix.target }}
+          path: raw-assets
+          pattern: keep_alive-*
+          merge-multiple: true
 
-      - name: Install Cross
-        run: cargo install cross --git https://github.com/cross-rs/cross.git
-
-      - name: Build
-        run: cross build --release --target ${{ matrix.target }}
-
-      - name: Prepare Artifacts
+      - name: Prepare Assets for Release
         run: |
-          mkdir -p out
-          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} out/${{ matrix.asset_name }}
+          mkdir -p release-dist
+          # Move the linux binary and rename it for clarity
+          if [ -f raw-assets/keep_alive ]; then
+            mv raw-assets/keep_alive release-dist/keep_alive-linux-arm64
+          fi
+          # Move the windows binary and rename it
+          if [ -f raw-assets/keep_alive.exe ]; then
+            mv raw-assets/keep_alive.exe release-dist/keep_alive-windows-x64.exe
+          fi
 
-      - name: Create Release and Upload
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag_name }}
-          files: out/${{ matrix.asset_name }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: release-dist/*
           generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
