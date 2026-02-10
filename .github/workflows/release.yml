@@ -5,6 +5,9 @@ on:
     tags:
       - '*'
 
+  workflow_dispatch:
+    
+
 jobs:
   validate:
     uses: ./.github/workflows/compile.yml@master
