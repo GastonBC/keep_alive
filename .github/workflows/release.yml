@@ -13,7 +13,7 @@ on:
 
 jobs:
   validate:
-    uses: ./.github/workflows/compile.yml@master
+    uses: ./.github/workflows/compile.yml
 
   create-release:
     needs: validate
