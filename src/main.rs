@@ -47,7 +47,7 @@ fn get_io_count() -> u64 {
     0       
 }
 
-fn write_to_dummy() -> std::io::Result<()> {
+fn write_to_dummy(counter: &u16) -> std::io::Result<()> {
     let mut file = fs::OpenOptions::new()
         .append(true)
         .create(true)
@@ -56,7 +56,7 @@ fn write_to_dummy() -> std::io::Result<()> {
     let now: chrono::DateTime<chrono::Local> = chrono::Local::now();
     let timestamp: String = now.format("%Y-%m-%d / %H:%M").to_string();
 
-    writeln!(file, "{} keepalive", timestamp)?;
+    writeln!(file, "{} keepalive {}/4", timestamp, counter)?;
     file.sync_all()?;
     
     println!("Activity triggered: Write successful.");
@@ -73,7 +73,7 @@ fn main() -> std::io::Result<()> {
     }
 
     let mut last_io = get_io_count();
-    let mut counter = 5;
+    let mut counter: u16 = 5;
     
 
     loop {
@@ -91,8 +91,8 @@ fn main() -> std::io::Result<()> {
         // write to dummy so it restarts all the loop
         if current_io > last_io + 15 {
             println!("Detected activity in the last 10 minutes");
-            write_to_dummy()?;
             counter = 1;
+            write_to_dummy(&counter)?;
             last_io = get_io_count();
             println!("Current IO {}", get_io_count());
         }
@@ -104,7 +104,7 @@ fn main() -> std::io::Result<()> {
 
             if counter <= 4 {
                 println!("No activity detected. Keep alive {counter}/4");
-                if let Err(e) = write_to_dummy() {
+                if let Err(e) = write_to_dummy(&counter) {
                     eprintln!("Write failed: {e}");
                 }
                 counter += 1;
