@@ -11,7 +11,7 @@ jobs:
       matrix:
         target:
           - aarch64-unknown-linux-gnu
-          - x86_64-pc-windows-gnu
+        # - x86_64-pc-windows-gnu
 
     steps:
       - uses: actions/checkout@v4
@@ -35,5 +35,5 @@ jobs:
           # Path where 'cross' outputs the binaries
           path: |
             target/${{ matrix.target }}/release/keep_alive
-            target/${{ matrix.target }}/release/keep_alive.exe
+          # target/${{ matrix.target }}/release/keep_alive.exe
           retention-days: 1
