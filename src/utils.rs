@@ -1,6 +1,8 @@
 use std::{fs, io::{BufReader, Write}};
 use std::io::BufRead;
 use chrono;
+use std::env;
+use std::path::PathBuf;
 
 pub fn get_io_count(drive: &str) -> u64 {
     let file = match fs::File::open("/proc/diskstats") {
@@ -31,19 +33,31 @@ pub fn write_to_dummy(dummy_file: &str, counter: &u8) -> std::io::Result<()> {
     let timestamp = now.format("%Y-%m-%d_%H:%M");
     let content = format!("keepalive {} {}/4", timestamp, counter);
 
-    // List of files to update
-    let files_to_update = [dummy_file, ".keep_alive_copy.txt"];
+    // Determine the base directory of the executable
+    let exe_dir = env::current_exe()?
+        .parent()
+        .map(|p| p.to_path_buf())
+        .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "Could not find parent directory"))?;
+
+    // Create the absolute path for the hidden copy
+    let keep_alive_path = exe_dir.join(".keep_alive_copy.txt");
+
+    // List of paths to update (using PathBuf for the joined path)
+    let files_to_update: Vec<PathBuf> = vec![
+        PathBuf::from(dummy_file),
+        keep_alive_path,
+    ];
 
     for path in files_to_update {
         let mut file = fs::OpenOptions::new()
             .append(true)
             .create(true)
-            .open(path)?;
+            .open(&path)?;
 
         writeln!(file, "{}", content)?;
         file.sync_all()?;
     }
     
-    println!("Activity triggered: Write successful to both files.");
+    println!("Activity triggered: Write successful.");
     Ok(())
 }
