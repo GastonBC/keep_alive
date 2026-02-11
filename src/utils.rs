@@ -32,6 +32,7 @@ pub fn write_to_dummy(dummy_file: &str, counter: &u8) -> std::io::Result<()> {
     let content = format!("keepalive {} {}/4", timestamp, counter);
 
     // List of files to update
+    // Dummy + local copy for check
     let files_to_update = [dummy_file, ".keep_alive_copy.txt"];
 
     for path in files_to_update {

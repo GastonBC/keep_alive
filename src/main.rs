@@ -52,12 +52,14 @@ fn main() -> std::io::Result<()> {
             println!("Detected activity in the last 10 minutes");
             counter = 1;
             utils::write_to_dummy(KEEPALIVE_FILE, &counter)?;
+
         } else if counter <= 4 {
             println!("No activity detected. Keep alive {counter}/4");
             if let Err(e) = utils::write_to_dummy(KEEPALIVE_FILE, &counter) {
                 eprintln!("Write failed: {e}");
             }
             counter += 1;
+
         } else {
             println!("Drive idle and counter exceeded. Waiting for user activity");
         }
