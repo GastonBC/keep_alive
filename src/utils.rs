@@ -1,8 +1,8 @@
-use std::{fs, io::{BufReader, Write}, thread, time::Duration};
+use std::{fs, io::{BufReader, Write}};
 use std::io::BufRead;
 use chrono;
 
-pub fn get_io_count() -> u64 {
+pub fn get_io_count(drive: &str) -> u64 {
     let file = match fs::File::open("/proc/diskstats") {
         Ok(f) => f,
         Err(_) => return 0,
@@ -11,7 +11,7 @@ pub fn get_io_count() -> u64 {
     let reader = BufReader::new(file);
 
     for line in reader.lines().map_while(Result::ok) {
-        if line.contains(DRIVE) {
+        if line.contains(drive) {
             let fields: Vec<&str> = line.split_whitespace().collect();
             // fields[3] = reads, fields[7] = writes
             let reads = fields.get(3).and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
@@ -28,14 +28,14 @@ pub fn is_mounted(path_to_check: &str) -> bool {
 
     
 
-pub fn write_to_dummy(path: String, counter: &u8) -> std::io::Result<()> {
+pub fn write_to_dummy(dummy_file: &str, counter: &u8) -> std::io::Result<()> {
     let mut file = fs::OpenOptions::new()
         .append(true)
         .create(true)
-        .open(path)?;
+        .open(dummy_file)?;
 
     let now: chrono::DateTime<chrono::Local> = chrono::Local::now();
-    let timestamp: String = now.format("%Y-%m-%d_%H:%M");
+    let timestamp = now.format("%Y-%m-%d_%H:%M");
 
     writeln!(file, "keepalive {} {}/4", timestamp, counter)?;
     file.sync_all()?;
