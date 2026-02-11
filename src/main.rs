@@ -47,7 +47,7 @@ fn get_io_count() -> u64 {
     0       
 }
 
-fn write_to_dummy(counter: &u16) -> std::io::Result<()> {
+fn write_to_dummy(counter: &u8) -> std::io::Result<()> {
     let mut file = fs::OpenOptions::new()
         .append(true)
         .create(true)
@@ -73,7 +73,7 @@ fn main() -> std::io::Result<()> {
     }
 
     let mut last_io = get_io_count();
-    let mut counter: u16 = 5;
+    let mut counter: u8 = 5;
     
 
     loop {
