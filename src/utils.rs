@@ -26,20 +26,24 @@ pub fn is_mounted(path_to_check: &str) -> bool {
     fs::metadata(path_to_check).is_ok()
 }
 
-    
-
 pub fn write_to_dummy(dummy_file: &str, counter: &u8) -> std::io::Result<()> {
-    let mut file = fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(dummy_file)?;
-
     let now: chrono::DateTime<chrono::Local> = chrono::Local::now();
     let timestamp = now.format("%Y-%m-%d_%H:%M");
+    let content = format!("keepalive {} {}/4", timestamp, counter);
 
-    writeln!(file, "keepalive {} {}/4", timestamp, counter)?;
-    file.sync_all()?;
+    // List of files to update
+    let files_to_update = [dummy_file, ".keep_alive_copy.txt"];
+
+    for path in files_to_update {
+        let mut file = fs::OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open(path)?;
+
+        writeln!(file, "{}", content)?;
+        file.sync_all()?;
+    }
     
-    println!("Activity triggered: Write successful.");
+    println!("Activity triggered: Write successful to both files.");
     Ok(())
 }
