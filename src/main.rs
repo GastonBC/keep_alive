@@ -54,7 +54,7 @@ fn write_to_dummy(counter: &u8) -> std::io::Result<()> {
         .open(KEEPALIVE_FILE)?;
 
     let now: chrono::DateTime<chrono::Local> = chrono::Local::now();
-    let timestamp: String = now.format("%Y-%m-%d_%H:%M").to_string();
+    let timestamp: String = now.format("%Y-%m-%d_%H:%M");
 
     writeln!(file, "keepalive {} {}/4", timestamp, counter)?;
     file.sync_all()?;
