@@ -39,46 +39,33 @@ fn main() -> std::io::Result<()> {
     
 
     loop {
-        // Check io every 10 minutes
         thread::sleep(Duration::from_secs(TIMER));
-
+    
         if !utils::is_mounted(MOUNT_PATH) {
             println!("Drive not mounted. Skipping cycle.");
             continue;
         }
-
-
+    
         let current_io = utils::get_io_count(DRIVE);
-        // there were changes between sleep and check, restart counter
-        // write to dummy so it restarts all the loop
+    
         if current_io > last_io + 15 {
             println!("Detected activity in the last 10 minutes");
             counter = 1;
             utils::write_to_dummy(KEEPALIVE_FILE, &counter)?;
-            last_io = utils::get_io_count(DRIVE);
-            println!("Current IO {}", utils::get_io_count(DRIVE));
-        }
 
-        // There were no changes, write to keep alive
-        else {
-            // if less than 4 loops passed (40 minutes), write to keep alive
-            // else it will do nothing until the if above this is triggered
-
-            if counter <= 4 {
-                println!("No activity detected. Keep alive {counter}/4");
-                if let Err(e) = utils::write_to_dummy(KEEPALIVE_FILE, &counter) {
-                    eprintln!("Write failed: {e}");
-                }
-                counter += 1;
+        } else if counter <= 4 {
+            println!("No activity detected. Keep alive {counter}/4");
+            if let Err(e) = utils::write_to_dummy(KEEPALIVE_FILE, &counter) {
+                eprintln!("Write failed: {e}");
             }
-            else{
-                println!("Drive idle and counter exceeded. Waiting for user activity");
-            }
+            counter += 1;
 
-            // Update small io increments
-            last_io = utils::get_io_count(DRIVE);
-            println!("Current IO {}", utils::get_io_count(DRIVE));
+        } else {
+            println!("Drive idle and counter exceeded. Waiting for user activity");
         }
-
+    
+        // Common updates for all mounted states
+        last_io = current_io;
+        println!("Current IO {last_io}");
     }
 }

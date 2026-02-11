@@ -44,6 +44,7 @@ pub fn write_to_dummy(dummy_file: &str, counter: &u8) -> std::io::Result<()> {
     let keep_alive_path = exe_dir.join(".keep_alive_copy.txt");
 
     // List of paths to update (using PathBuf for the joined path)
+    // Dummy + local copy for check
     let files_to_update: Vec<PathBuf> = vec![
         PathBuf::from(dummy_file),
         keep_alive_path,
