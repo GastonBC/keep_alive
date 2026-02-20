@@ -4,6 +4,8 @@ use crate::utils::*;
 
 /*
 Steps to refresh service
+
+sudo chmod +x keep_alive
 sudo systemctl stop hdd-keepalive
 sudo systemctl restart hdd-keepalive
 
