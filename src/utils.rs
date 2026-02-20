@@ -1,4 +1,6 @@
 use std::{fs, io::{BufReader, Write}, path::PathBuf};
+use std::env;
+
 use std::io::BufRead;
 use chrono;
 
@@ -12,33 +14,43 @@ pub const KEEPALIVE_FILE: &str = "/mnt/drive1/.keepalive.txt";
 
 /// Resolves the path to 'keep_alive.conf' in the same folder as the binary.
 fn get_config_path() -> PathBuf {
-    env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|parent| parent.join("keep_alive.conf")))
-        .unwrap_or_else(|| PathBuf::from("keep_alive.conf"))
+    if let Ok(mut exe_path) = env::current_exe() {
+        if exe_path.pop() {
+            return exe_path.join("keep_alive.conf");
+        }
+    }
+
+    PathBuf::from("keep_alive.conf")
 }
 
 
 /// Reads the timer value from the local config file.
+///
+/// Timer is in minutes
 pub fn get_timer_duration() -> u32 {
     let config_path = get_config_path();
     
-    if let Ok(content) = fs::read_to_string(config_path) {
+    if let Ok(content) = fs::read_to_string(&config_path) {
         if let Ok(val) = content.trim().parse::<u32>() {
             return val;
         }
     }
+
+    // If reading/parsing fails, create the file with the default value
+    // This ensures the file exists for you to edit later
+    let _ = fs::write(&config_path, DEFAULT_TIMER_MIN.to_string());
+    
     DEFAULT_TIMER_MIN
 }
 
-
+/// The amount of loops calculated to comply with the config
+///
+/// Total time is loops * 10 min + 5 min to shut down
 pub fn calculate_loops() -> u8{
     let timer = get_timer_duration();
-    let loops = (timer*60) / LOOP_SECS;
+    let loops = ((timer-10)*60) / LOOP_SECS;
 
-    loops as u8
-
-    // Total time is loops * 10 min + 15 min
+    loops as u8    
 }
 
 
