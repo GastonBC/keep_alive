@@ -2,6 +2,47 @@ use std::{fs, io::{BufReader, Write}};
 use std::io::BufRead;
 use chrono;
 
+
+const MOUNT_PATH: &str = "/mnt/drive1";
+const DRIVE: &str = "sda";
+
+const DEFAULT_TIMER_MIN: u32 = 40; // In minutes
+const LOOP_SECS: u32 = 600; // 10 Minutes. Drive spinsdown at 15 minutes.
+const KEEPALIVE_FILE: &str = "/mnt/drive1/.keepalive.txt";
+
+
+/// Resolves the path to 'keep_alive.conf' in the same folder as the binary.
+fn get_config_path() -> PathBuf {
+    env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|parent| parent.join("keep_alive.conf")))
+        .unwrap_or_else(|| PathBuf::from("keep_alive.conf"))
+}
+
+
+/// Reads the timer value from the local config file.
+pub fn get_timer_duration() -> u32 {
+    let config_path = get_config_path();
+    
+    if let Ok(content) = fs::read_to_string(config_path) {
+        if let Ok(val) = content.trim().parse::<u64>() {
+            return val;
+        }
+    }
+    DEFAULT_TIMER_MIN
+}
+
+
+pub fn calculate_loops() -> u32{
+    let timer = get_timer_duration();
+    (timer*60) / LOOP_SECS
+
+    // Total time is loops * 10 min + 15 min
+}
+
+
+
+
 pub fn get_io_count(drive: &str) -> u64 {
     let file = match fs::File::open("/proc/diskstats") {
         Ok(f) => f,
