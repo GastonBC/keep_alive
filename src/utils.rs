@@ -1,14 +1,13 @@
-use std::{fs, io::{BufReader, Write}};
+use std::{fs, io::{BufReader, Write}, path::PathBuf};
 use std::io::BufRead;
 use chrono;
 
-
-const MOUNT_PATH: &str = "/mnt/drive1";
-const DRIVE: &str = "sda";
-
-const DEFAULT_TIMER_MIN: u32 = 40; // In minutes
-const LOOP_SECS: u32 = 600; // 10 Minutes. Drive spinsdown at 15 minutes.
-const KEEPALIVE_FILE: &str = "/mnt/drive1/.keepalive.txt";
+pub const MOUNT_PATH: &str = "/mnt/drive1";
+pub const DRIVE: &str = "sda";
+ 
+pub const DEFAULT_TIMER_MIN: u32 = 40; // In minutes
+pub const LOOP_SECS: u32 = 600; // 10 Minutes. Drive spinsdown at 15 minutes.
+pub const KEEPALIVE_FILE: &str = "/mnt/drive1/.keepalive.txt";
 
 
 /// Resolves the path to 'keep_alive.conf' in the same folder as the binary.
@@ -25,7 +24,7 @@ pub fn get_timer_duration() -> u32 {
     let config_path = get_config_path();
     
     if let Ok(content) = fs::read_to_string(config_path) {
-        if let Ok(val) = content.trim().parse::<u64>() {
+        if let Ok(val) = content.trim().parse::<u32>() {
             return val;
         }
     }
@@ -33,9 +32,11 @@ pub fn get_timer_duration() -> u32 {
 }
 
 
-pub fn calculate_loops() -> u32{
+pub fn calculate_loops() -> u8{
     let timer = get_timer_duration();
-    (timer*60) / LOOP_SECS
+    let loops = (timer*60) / LOOP_SECS;
+
+    loops as u8
 
     // Total time is loops * 10 min + 15 min
 }
