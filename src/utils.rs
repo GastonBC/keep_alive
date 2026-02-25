@@ -80,10 +80,10 @@ pub fn is_mounted(path_to_check: &str) -> bool {
     fs::metadata(path_to_check).is_ok()
 }
 
-pub fn write_to_dummy(dummy_file: &str, counter: &u8) -> std::io::Result<()> {
+pub fn write_to_dummy(dummy_file: &str, counter: &u8, loops: &u8) -> std::io::Result<()> {
     let now: chrono::DateTime<chrono::Local> = chrono::Local::now();
     let timestamp = now.format("%Y-%m-%d_%H:%M");
-    let content = format!("keepalive {} {}/4", timestamp, counter);
+    let content = format!("keepalive {} {}/{}", timestamp, counter, loops);
 
     // List of files to update
     // Dummy + local copy for check

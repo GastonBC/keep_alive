@@ -39,22 +39,22 @@ fn main() -> std::io::Result<()> {
         if current_io > last_io + 15 {
             counter = 1;
             println!("{counter}/{loops}: Detected activity in the last 10 minutes");
-        }
+            write_to_dummy(KEEPALIVE_FILE, &counter, &loops)?;
 
-
-        if counter <= loops {
+        } else if counter <= loops {
             println!("{counter}/{loops}: No activity detected.");
-            write_to_dummy(KEEPALIVE_FILE, &counter)?;
+            write_to_dummy(KEEPALIVE_FILE, &counter, &loops)?;
             counter += 1;
         
         } else {
             println!("{counter}/{loops}: Drive idle and counter exceeded. Waiting for user activity");
-            counter = loops + 1; // Reset
+            counter = loops + 1; // Disable reset
         }
+        
     
         // Common updates for all mounted states
         last_io = current_io;
-        println!("Current IO {last_io}");
         loops = calculate_loops();
     }
-} 
+}
+
