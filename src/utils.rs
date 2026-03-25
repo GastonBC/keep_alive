@@ -5,7 +5,7 @@ use std::io::BufRead;
 use chrono;
 
 pub const MOUNT_PATH: &str = "/mnt/drive1";
-pub const DRIVE: &str = "sda";
+pub const DRIVE: &str = "sdb";
  
 pub const DEFAULT_TIMER_MIN: u32 = 90; // In minutes
 pub const LOOP_SECS: u32 = 600; // 10 Minutes. Drive spinsdown at 15 minutes.
