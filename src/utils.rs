@@ -54,9 +54,26 @@ pub fn calculate_loops() -> u8{
 }
 
 
+fn resolve_uuid_to_device(uuid: &str) -> Option<String> {
+    let path = format!("/dev/disk/by-uuid/{}", uuid);
+    // canonicalize resuelve el link simbólico: 
+    // de "/dev/disk/by-uuid/123..." a "/dev/sdX1"
+    fs::canonicalize(path).ok().and_then(|p| {
+        p.file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+    })
+}
 
 
-pub fn get_io_count(drive: &str) -> u64 {
+pub fn get_io_count_by_uuid(uuid: &str) -> u64 {
+    let device_name = match resolve_uuid_to_device(uuid) {
+        Some(name) => name,
+        None => return 0,
+    };
+
+    // Si el nombre es "sdb1", limpiamos el número para obtener el disco "sdb"
+    let drive = device_name.trim_end_matches(|c: char| c.is_numeric());
+
     let file = match fs::File::open("/proc/diskstats") {
         Ok(f) => f,
         Err(_) => return 0,
@@ -65,15 +82,16 @@ pub fn get_io_count(drive: &str) -> u64 {
     let reader = BufReader::new(file);
 
     for line in reader.lines().map_while(Result::ok) {
-        if line.contains(drive) {
-            let fields: Vec<&str> = line.split_whitespace().collect();
-            // fields[3] = reads, fields[7] = writes
+        let fields: Vec<&str> = line.split_whitespace().collect();
+        
+        // El nombre del disco está en la columna 2 (índice 2)
+        if fields.get(2) == Some(&drive) {
             let reads = fields.get(3).and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
             let writes = fields.get(7).and_then(|s| s.parse::<u64>().ok()).unwrap_or(0);
             return reads + writes;
         }
     }
-    0       
+    0
 }
 
 pub fn is_mounted(path_to_check: &str) -> bool {
