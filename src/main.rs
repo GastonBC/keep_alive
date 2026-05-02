@@ -44,7 +44,7 @@ fn main() -> std::io::Result<()> {
         }
 
 
-        if counter <= loops {
+        else if counter <= loops {
             println!("{counter}/{loops}: No activity detected.");
             write_to_dummy(KEEPALIVE_FILE, &counter)?;
             counter += 1;
