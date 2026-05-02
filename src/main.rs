@@ -19,7 +19,7 @@ fn main() -> std::io::Result<()> {
         println!("No drive mounted");
     }
     let mut loops = calculate_loops();
-    let mut last_io = get_io_count(DRIVE);
+    let mut last_io = get_io_count_by_uuid(DRIVE_UUID);
     let mut counter: u8 = loops + 1;
     
     println!("Settings:");
@@ -35,7 +35,7 @@ fn main() -> std::io::Result<()> {
             continue;
         }
     
-        let current_io = get_io_count(DRIVE);
+        let current_io = get_io_count_by_uuid(DRIVE_UUID);
     
 
         if current_io > last_io + 15 {
