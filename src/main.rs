@@ -22,23 +22,24 @@ fn main() -> std::io::Result<()> {
 */
 
     let config_path = get_config_path();
-    let config = load_config(&config_path);
+    let mut config = load_config(&config_path);
 
     let mut loops = config.calculate_loops(); 
     let mut last_io = get_io_count_by_uuid(&config.uuid);
     let mut counter: u8 = loops + 1;
     
     println!("Settings:");
-    println!("UUID {}", config.uuid);
-    println!("MOUNT PATH{}", config.mount_path);
+    println!("UUID {}", &config.uuid);
+    println!("MOUNT PATH{}", &config.mount_path);
     println!("ALIVE FILE {}", &config.keepalive_file);
     println!();
-    println!("TIMER MIN {}", config.timer_min);                         // Total minutes that you want the disk to stay spinning. Eg 60 minutes
-    println!("LOOP SECS {}", config.loop_secs);                         // While loop delay. Disk spins down at 15 mins so we set the loop to check every 10 mins
-    println!("TOTAL LOOPS {}", &config.calculate_loops().to_string());  // How many loops will execute before letting it spin down
+    println!("TIMER MINS {}", &config.timer_mins);                         // Total minutes that you want the disk to stay spinning. Eg 60 minutes
+    println!("LOOP SECS {}", &config.loop_secs);                         // While loop delay. Disk spins down at 15 mins so we set the loop to check every 10 mins
+    println!("TOTAL LOOPS {}", loops.to_string());  // How many loops will execute before letting it spin down
 
     loop {
         thread::sleep(Duration::from_secs(config.loop_secs.into()));
+        
     
         if !is_mounted(&config.mount_path) {
             println!("Drive not mounted. Skipping cycle.");
@@ -67,7 +68,11 @@ fn main() -> std::io::Result<()> {
         // Common updates for all mounted states
         last_io = current_io;
         println!("Current IO {last_io}");
+
+        // Reload config
+        config = load_config(&config_path);
         loops = config.calculate_loops();
     }
+
     
 } 
