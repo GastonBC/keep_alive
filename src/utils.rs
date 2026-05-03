@@ -1,19 +1,50 @@
-use std::{fs, io::{BufReader, Write}, path::PathBuf};
+use std::{fs, collections::HashMap, io::{BufReader, Write}, path::PathBuf};
 use std::env;
 
 use std::io::BufRead;
 use chrono;
 
-pub const MOUNT_PATH: &str = "/mnt/drive1";
-pub const DRIVE_UUID: &str = "34649d21-834c-4b33-83da-b3265b951738";
  
-pub const DEFAULT_TIMER_MIN: u32 = 90; // In minutes
-pub const LOOP_SECS: u32 = 600; // 10 Minutes. Drive spinsdown at 15 minutes.
-pub const KEEPALIVE_FILE: &str = "/mnt/drive1/.keepalive.txt";
+pub struct Config {
+    pub uuid: String,
+    pub mount_path: String,
+    pub timer_min: u32,
+    pub keepalive_file: String,
+    pub loop_secs: u32
+}
 
+impl Config {
+    pub fn default() -> Self {
+        Self {
+            uuid: "XX-XX".to_string(),
+            mount_path: "/XX/XX".to_string(),
+            timer_min: 90,
+            keepalive_file: "XX/XX".to_string(),
+            loop_secs: 600,
+        }
+    }
+
+    /// Calcula la cantidad de vueltas para cumplir con el timer.
+    /// Total time is loops * 10 min + 5 min to shut down.
+    pub fn calculate_loops(&self) -> u8 {
+        // Evitamos overflow si timer_min es menor a 10
+        if self.timer_min <= 10 {
+            return 1; 
+        }
+
+        let loops = ((self.timer_min - 10) * 60) / self.loop_secs;
+        
+        // Retornamos como u8, limitando al máximo valor de u8 para evitar pánico
+        loops.min(u8::MAX as u32) as u8
+    }
+
+}
+
+
+/// ----------------- READ ACTIONS 
 
 /// Resolves the path to 'keep_alive.conf' in the same folder as the binary.
-fn get_config_path() -> PathBuf {
+pub fn get_config_path() -> PathBuf {
     if let Ok(mut exe_path) = env::current_exe() {
         if exe_path.pop() {
             return exe_path.join("keep_alive.conf");
@@ -23,46 +54,45 @@ fn get_config_path() -> PathBuf {
     PathBuf::from("keep_alive.conf")
 }
 
+pub fn load_config(config_path: &PathBuf ) -> Config {
+    let mut config = Config::default();
 
-/// Reads the timer value from the local config file.
-///
-/// Timer is in minutes
-pub fn get_timer_duration() -> u32 {
-    let config_path = get_config_path();
-    
-    if let Ok(content) = fs::read_to_string(&config_path) {
-        if let Ok(val) = content.trim().parse::<u32>() {
-            return val;
+    if let Ok(content) = fs::read_to_string(config_path) {
+        let mut map = HashMap::new();
+        
+        // Parseo básico de líneas CLAVE="VALOR"
+        for line in content.lines() {
+            let parts: Vec<&str> = line.splitn(2, '=').collect();
+            if parts.len() == 2 {
+                let key = parts[0].trim();
+                let val = parts[1].trim().trim_matches('"'); // Quita espacios y comillas
+                map.insert(key, val);
+            }
         }
+
+        // Asignar valores si existen en el archivo
+        if let Some(v) = map.get("UUID") { config.uuid = v.to_string(); }
+        if let Some(v) = map.get("MOUNT_PATH") { config.mount_path = v.to_string(); }
+        if let Some(v) = map.get("LOOP_SECS") { config.mount_path = v.to_string(); }
+        if let Some(v) = map.get("TIMER_MIN") {
+            if let Ok(n) = v.parse::<u32>() { config.timer_min = n; }
+        }
+        if let Some(v) = map.get("KEEPALIVE_FILE") { config.keepalive_file = v.to_string(); }
+        
+    } else {
+        // Si no existe, crear un archivo ejemplo con los defaults
+        let default_content = format!(
+            "UUID=\"{}\"\nMOUNT_PATH=\"{}\"\nTIMER_MIN={}\nKEEPALIVE_FILE=\"{}\"\n",
+            config.uuid, config.mount_path, config.timer_min, config.keepalive_file
+        );
+        let _ = fs::write(config_path, default_content);
     }
 
-    // If reading/parsing fails, create the file with the default value
-    // This ensures the file exists for you to edit later
-    let _ = fs::write(&config_path, DEFAULT_TIMER_MIN.to_string());
-    
-    DEFAULT_TIMER_MIN
-}
-
-/// The amount of loops calculated to comply with the config
-///
-/// Total time is loops * 10 min + 5 min to shut down
-pub fn calculate_loops() -> u8{
-    let timer = get_timer_duration();
-    let loops = ((timer-10)*60) / LOOP_SECS;
-
-    loops as u8    
+    config
 }
 
 
-fn resolve_uuid_to_device(uuid: &str) -> Option<String> {
-    let path = format!("/dev/disk/by-uuid/{}", uuid);
-    // canonicalize resuelve el link simbólico: 
-    // de "/dev/disk/by-uuid/123..." a "/dev/sdX1"
-    fs::canonicalize(path).ok().and_then(|p| {
-        p.file_name()
-            .map(|name| name.to_string_lossy().into_owned())
-    })
-}
+/// ----------------- ACTIONS
 
 
 pub fn get_io_count_by_uuid(uuid: &str) -> u64 {
@@ -94,9 +124,9 @@ pub fn get_io_count_by_uuid(uuid: &str) -> u64 {
     0
 }
 
-pub fn is_mounted(path_to_check: &str) -> bool {
-    fs::metadata(path_to_check).is_ok()
-}
+
+/// ----------------- WRITE ACTIONS
+
 
 pub fn write_to_dummy(dummy_file: &str, counter: &u8) -> std::io::Result<()> {
     let now: chrono::DateTime<chrono::Local> = chrono::Local::now();
@@ -132,3 +162,23 @@ pub fn write_to_dummy(dummy_file: &str, counter: &u8) -> std::io::Result<()> {
     println!("Activity triggered: Write successful.");
     Ok(())
 }
+
+/// ------------------------------ PATH, MOUNT ------------------------
+
+
+pub fn is_mounted(path_to_check: &str) -> bool {
+    fs::metadata(path_to_check).is_ok()
+}
+
+fn resolve_uuid_to_device(uuid: &str) -> Option<String> {
+    let path = format!("/dev/disk/by-uuid/{}", uuid);
+    // canonicalize resuelve el link simbólico: 
+    // de "/dev/disk/by-uuid/123..." a "/dev/sdX1"
+    fs::canonicalize(path).ok().and_then(|p| {
+        p.file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+    })
+}
+
+
+
