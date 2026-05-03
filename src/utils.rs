@@ -8,7 +8,7 @@ use chrono;
 pub struct Config {
     pub uuid: String,
     pub mount_path: String,
-    pub timer_min: u32,
+    pub timer_mins: u32,
     pub keepalive_file: String,
     pub loop_secs: u32
 }
@@ -18,7 +18,7 @@ impl Config {
         Self {
             uuid: "XX-XX".to_string(),
             mount_path: "/XX/XX".to_string(),
-            timer_min: 90,
+            timer_mins: 90,
             keepalive_file: "XX/XX".to_string(),
             loop_secs: 600,
         }
@@ -28,11 +28,11 @@ impl Config {
     /// Total time is loops * 10 min + 5 min to shut down.
     pub fn calculate_loops(&self) -> u8 {
         // Evitamos overflow si timer_min es menor a 10
-        if self.timer_min <= 10 {
+        if self.timer_mins <= 10 {
             return 1; 
         }
 
-        let loops = ((self.timer_min - 10) * 60) / self.loop_secs;
+        let loops = ((self.timer_mins - 10) * 60) / self.loop_secs;
         
         // Retornamos como u8, limitando al máximo valor de u8 para evitar pánico
         loops.min(u8::MAX as u32) as u8
@@ -73,9 +73,11 @@ pub fn load_config(config_path: &PathBuf ) -> Config {
         // Asignar valores si existen en el archivo
         if let Some(v) = map.get("UUID") { config.uuid = v.to_string(); }
         if let Some(v) = map.get("MOUNT_PATH") { config.mount_path = v.to_string(); }
-        if let Some(v) = map.get("LOOP_SECS") { config.mount_path = v.to_string(); }
-        if let Some(v) = map.get("TIMER_MIN") {
-            if let Ok(n) = v.parse::<u32>() { config.timer_min = n; }
+        if let Some(v) = map.get("LOOP_SECS") {
+            if let Ok(n) = v.parse::<u32>() { config.loop_secs = n; }
+        }
+        if let Some(v) = map.get("TIMER_MINS") {
+            if let Ok(n) = v.parse::<u32>() { config.timer_mins = n; }
         }
         if let Some(v) = map.get("KEEPALIVE_FILE") { config.keepalive_file = v.to_string(); }
         
@@ -83,7 +85,7 @@ pub fn load_config(config_path: &PathBuf ) -> Config {
         // Si no existe, crear un archivo ejemplo con los defaults
         let default_content = format!(
             "UUID=\"{}\"\nMOUNT_PATH=\"{}\"\nTIMER_MIN={}\nKEEPALIVE_FILE=\"{}\"\n",
-            config.uuid, config.mount_path, config.timer_min, config.keepalive_file
+            config.uuid, config.mount_path, config.timer_mins, config.keepalive_file
         );
         let _ = fs::write(config_path, default_content);
     }
